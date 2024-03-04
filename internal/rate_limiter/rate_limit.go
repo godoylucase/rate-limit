@@ -2,17 +2,13 @@ package rate_limiter
 
 import (
 	"context"
-	"log"
+	"fmt"
+	"rate-limit/errs"
+	"rate-limit/internal/notification"
 	"time"
 
 	"github.com/go-redis/redis/v8"
 )
-
-type SWCData struct {
-	Key   string
-	Limit int64
-	WSize time.Duration
-}
 
 type slidingWindowCounter struct {
 	redis *redis.Client
@@ -24,7 +20,7 @@ func NewSlidingWindowCounter() *slidingWindowCounter {
 	}
 }
 
-func (swc *slidingWindowCounter) IncrementAndCheckLimit(ctx context.Context, data SWCData) bool {
+func (swc *slidingWindowCounter) CheckLimit(ctx context.Context, lconfig *notification.LimitConfig) error {
 	currentTime := time.Now().Unix()
 
 	// Lua script to atomically remove old timestamps, add the current timestamp, and get the count
@@ -45,13 +41,16 @@ func (swc *slidingWindowCounter) IncrementAndCheckLimit(ctx context.Context, dat
 	script := redis.NewScript(luaScript)
 
 	// Execute the Lua script atomically
-	result, err := script.Run(ctx, swc.redis, []string{data.Key}, currentTime, data.WSize.Seconds()).Result()
+	result, err := script.Run(ctx, swc.redis, []string{lconfig.Key}, currentTime, lconfig.WindowSize.Seconds()).Result()
 	if err != nil {
-		log.Printf("Error executing Lua script: %v", err)
-		return false
+		return fmt.Errorf("error executing redis Lua script: %w", errs.ErrInternal)
 	}
 
 	// Check against the limit
 	count := result.(int64)
-	return count <= data.Limit
+	if count > lconfig.Limit {
+		return errs.ErrExceededRateLimit
+	}
+
+	return nil
 }
