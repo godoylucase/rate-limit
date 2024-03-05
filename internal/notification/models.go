@@ -28,8 +28,8 @@ func isValid(notif *Notification) bool {
 	return true
 }
 
-type LimitConfig struct {
-	Key        string
-	Limit      int64
-	WindowSize time.Duration
+type CheckLimitRequest struct {
+	Key     string
+	Limit   int64
+	TWindow time.Duration
 }

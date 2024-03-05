@@ -12,24 +12,24 @@ type Gateway interface {
 }
 
 type RateLimiter interface {
-	CheckLimit(ctx context.Context, conf *LimitConfig) error
+	CheckLimit(ctx context.Context, req *CheckLimitRequest) error
 }
 
-type service struct {
+type Service struct {
 	gateway  Gateway
 	rlimiter RateLimiter
-	lconfigs configs.LimitConfigs
+	lconfigs configs.LimitConfigMap
 }
 
-func NewService(rlimiter RateLimiter, gateway Gateway, lconfigs configs.LimitConfigs) *service {
-	return &service{
+func NewService(rlimiter RateLimiter, gateway Gateway, lconfigs configs.LimitConfigMap) *Service {
+	return &Service{
 		gateway:  gateway,
 		rlimiter: rlimiter,
 		lconfigs: lconfigs,
 	}
 }
 
-func (s *service) Send(ctx context.Context, notif *Notification) error {
+func (s *Service) Send(ctx context.Context, notif *Notification) error {
 	if !isValid(notif) {
 		return fmt.Errorf("invalid notification values: %w", errs.ErrInvalidArguments)
 	}
@@ -37,10 +37,10 @@ func (s *service) Send(ctx context.Context, notif *Notification) error {
 	conf := s.lconfigs.Get(notif.Type)
 	key := fmt.Sprintf("%v-%v", notif.UserID.String(), notif.Type)
 
-	if err := s.rlimiter.CheckLimit(ctx, &LimitConfig{
-		Key:        key,
-		Limit:      conf.Limit,
-		WindowSize: conf.UnitToDuration(),
+	if err := s.rlimiter.CheckLimit(ctx, &CheckLimitRequest{
+		Key:     key,
+		Limit:   conf.Limit,
+		TWindow: conf.WindowsSizeDuration(),
 	}); err != nil {
 		return fmt.Errorf("error checking rate limit for notification type %v: %w", notif.Type, err)
 	}
