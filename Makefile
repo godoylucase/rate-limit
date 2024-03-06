@@ -30,7 +30,7 @@ redis-ready:
 local-redis: redis-up redis-ready
 
 # Run Go tests
-integration-test: local-redis
+local-integration-test: local-redis
 	go test ./integration_tests/...
 
 # Run unit tests
@@ -38,18 +38,18 @@ unit-test:
 	go test ./internal/...
 
 # Run all local tests
-local-all: unit-test integration-test
-
-# Run integration tests for GitHub Actions
-integration-test-gha: 
-	go test ./integration_tests/...
-
-# Run all tests for GitHub Actions
-all-gha: unit-test integration-test-gha
+local-all: unit-test local-integration-test
 
 # Stop Redis container
 local-clean:
 	docker-compose down
+
+# Run integration tests for GitHub Actions
+gha-integration-test: 
+	go test ./integration_tests/...
+
+# Run all tests for GitHub Actions
+gha-all: unit-test gha-integration-test
 
 # Run linting using golangci-lint
 lint:

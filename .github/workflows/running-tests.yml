@@ -33,4 +33,4 @@ jobs:
       - name: Build
         run: go build -v ./...
       - name: Test with Makefile target
-        run: make all-gha
+        run: make gha-all
