@@ -18,9 +18,9 @@ func (ns *NotificationServiceSuite) TestSendNotificationsNoRateLimited_SlidingWi
 	given, when, then := NotificationServiceTestStages(ns.T())
 
 	given.
-		a_rate_limit_configuration().and().
+		a_rate_limit_configuration_from("./support/configs/sliding_window_conf.json").and().
 		a_no_op_gateway().and().
-		a_redis_sliding_window_rate_limiter().and().
+		a_redis_rate_limiter().and().
 		a_notification_service().and().
 		status_notifications_group_with_limit_size()
 
@@ -35,9 +35,9 @@ func (ns *NotificationServiceSuite) TestSendNotificationsRateLimited_SlidingWind
 	given, when, then := NotificationServiceTestStages(ns.T())
 
 	given.
-		a_rate_limit_configuration().and().
+		a_rate_limit_configuration_from("./support/configs/sliding_window_conf.json").and().
 		a_no_op_gateway().and().
-		a_redis_sliding_window_rate_limiter().and().
+		a_redis_rate_limiter().and().
 		a_notification_service().and().
 		status_notifications_group_with_twice_limit_size()
 
@@ -52,9 +52,9 @@ func (ns *NotificationServiceSuite) TestSendNotificationsNoRateLimited_FixedWind
 	given, when, then := NotificationServiceTestStages(ns.T())
 
 	given.
-		a_rate_limit_configuration().and().
+		a_rate_limit_configuration_from("./support/configs/fixed_window_conf.json").and().
 		a_no_op_gateway().and().
-		a_redis_fixed_window_rate_limiter().and().
+		a_redis_rate_limiter().and().
 		a_notification_service().and().
 		status_notifications_group_with_limit_size()
 
@@ -69,9 +69,9 @@ func (ns *NotificationServiceSuite) TestSendNotificationsRateLimited_FixedWindow
 	given, when, then := NotificationServiceTestStages(ns.T())
 
 	given.
-		a_rate_limit_configuration().and().
+		a_rate_limit_configuration_from("./support/configs/fixed_window_conf.json").and().
 		a_no_op_gateway().and().
-		a_redis_fixed_window_rate_limiter().and().
+		a_redis_rate_limiter().and().
 		a_notification_service().and().
 		status_notifications_group_with_twice_limit_size()
 

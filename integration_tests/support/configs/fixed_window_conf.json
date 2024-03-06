@@ -1,0 +1,23 @@
+{
+  "gateway": "no_op",
+  "rate_limit": {
+    "type": "sliding_window",
+    "limits": [
+      {
+        "type": "status",
+        "limit": 2,
+        "window_size_ms": 500
+      },
+      {
+        "type": "news",
+        "limit": 250,
+        "window_size_ms": 500
+      },
+      {
+        "type": "marketing",
+        "limit": 1,
+        "window_size_ms": 1000
+      }
+    ]
+  }
+}

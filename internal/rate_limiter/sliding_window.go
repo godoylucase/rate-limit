@@ -3,7 +3,7 @@ package rate_limiter
 import (
 	"context"
 	"fmt"
-	"rate-limit/errs"
+	"rate-limit/internal/errs"
 	"strconv"
 	"time"
 
@@ -15,7 +15,7 @@ type slidingWindowCounter struct {
 	redis *redis.Client
 }
 
-func NewSlidingWindowCounter(redis *redis.Client) *slidingWindowCounter {
+func newSlidingWindowCounter(redis *redis.Client) *slidingWindowCounter {
 	return &slidingWindowCounter{
 		redis: redis,
 	}

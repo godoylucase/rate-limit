@@ -4,8 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
-	"rate-limit/errs"
+	"rate-limit/internal/errs"
 	"time"
 
 	"github.com/go-redis/redis/v8"
@@ -20,7 +19,7 @@ type fixedWindowCounter struct {
 	redis *redis.Client
 }
 
-func NewFixedWindowCounter(redis *redis.Client) *fixedWindowCounter {
+func newFixedWindowCounter(redis *redis.Client) *fixedWindowCounter {
 	return &fixedWindowCounter{
 		redis: redis,
 	}
@@ -42,7 +41,6 @@ func (fwc *fixedWindowCounter) CheckLimit(ctx context.Context, key string, limit
 	if err != nil {
 		return fmt.Errorf("failed to get TTL for key %v with error: %w", key, err)
 	}
-	log.Printf("key [%v] with TTL %v", key, ttlDuration)
 
 	// Set expiration if necessary
 	if ttlDuration == keyWithoutExpire || ttlDuration == keyThatDoesNotExist {
@@ -56,11 +54,9 @@ func (fwc *fixedWindowCounter) CheckLimit(ctx context.Context, key string, limit
 	if err != nil && !errors.Is(err, redis.Nil) {
 		return fmt.Errorf("failed to get total requests for key %v with error: %w", key, err)
 	}
-	log.Printf("key [%v] with request counter %v", key, total)
 
 	// Check limit and deny if exceeded
 	if int64(total) >= limit {
-		log.Printf("key [%v] rate limited before increment", key)
 		return errs.ErrExceededRateLimit
 	}
 
@@ -69,15 +65,12 @@ func (fwc *fixedWindowCounter) CheckLimit(ctx context.Context, key string, limit
 	if err != nil {
 		return fmt.Errorf("failed to increment key %v with error: %w", key, err)
 	}
-	log.Printf("key [%v] with request counter %v after increment", key, total)
 
 	// Check limit again and deny if exceeded after increment
 	if int64(total) > limit {
-		log.Printf("key [%v] rate limited after increment", key)
 		return errs.ErrExceededRateLimit
 	}
 
-	log.Printf("key [%v] allowed after increment", key)
 	// Allow request
 	return nil
 }

@@ -3,8 +3,8 @@ package integration_tests
 import (
 	"context"
 	"fmt"
+	"rate-limit/integration_tests/support/gateway"
 	"rate-limit/internal/configs"
-	"rate-limit/internal/infrastructure/gateway"
 	"rate-limit/internal/notification"
 	"rate-limit/internal/rate_limiter"
 	"sync/atomic"
@@ -39,7 +39,7 @@ type NotificationStage struct {
 
 	userID ksuid.KSUID
 
-	conf     configs.LimitConfigMap
+	conf     *configs.NotificationService
 	gateway  notification.Gateway
 	rlimiter notification.RateLimiter
 	service  *notification.Service
@@ -65,8 +65,8 @@ func (ns *NotificationStage) and() *NotificationStage {
 }
 
 // given
-func (ns *NotificationStage) a_rate_limit_configuration() *NotificationStage {
-	conf, err := configs.LoadLimitConfigs("limit_configs.json")
+func (ns *NotificationStage) a_rate_limit_configuration_from(filepath string) *NotificationStage {
+	conf, err := configs.Load(filepath)
 	if err != nil {
 		panic(fmt.Errorf("failed to load limit configuration: %w", err))
 	}
@@ -88,27 +88,20 @@ func (ns *NotificationStage) a_no_op_gateway() *NotificationStage {
 	return ns
 }
 
-func (ns *NotificationStage) a_redis_sliding_window_rate_limiter() *NotificationStage {
+func (ns *NotificationStage) a_redis_rate_limiter() *NotificationStage {
 	client := redis.NewClient(&redis.Options{Addr: "localhost:6379", Password: "", DB: 0})
-	ns.rlimiter = rate_limiter.NewSlidingWindowCounter(client)
-
-	return ns
-}
-
-func (ns *NotificationStage) a_redis_fixed_window_rate_limiter() *NotificationStage {
-	client := redis.NewClient(&redis.Options{Addr: "localhost:6379", Password: "", DB: 0})
-	ns.rlimiter = rate_limiter.NewFixedWindowCounter(client)
+	ns.rlimiter = rate_limiter.Get(ns.conf.RateLimiterType, client)
 
 	return ns
 }
 
 func (ns *NotificationStage) a_notification_service() *NotificationStage {
-	ns.service = notification.NewService(ns.rlimiter, ns.gateway, ns.conf)
+	ns.service = notification.NewService(ns.rlimiter, ns.gateway, ns.conf.Limits)
 	return ns
 }
 
 func (ns *NotificationStage) status_notifications_group_with_limit_size() *NotificationStage {
-	conf := ns.conf.Get("status")
+	conf := ns.conf.Limits.Get("status")
 	if conf == nil {
 		ns.assert.Failf("invalid notification type value: %v", "status")
 	}
@@ -119,7 +112,7 @@ func (ns *NotificationStage) status_notifications_group_with_limit_size() *Notif
 }
 
 func (ns *NotificationStage) status_notifications_group_with_twice_limit_size() *NotificationStage {
-	conf := ns.conf.Get("status")
+	conf := ns.conf.Limits.Get("status")
 	if conf == nil {
 		ns.assert.Failf("invalid notification type value: %v", "status")
 	}
@@ -130,7 +123,7 @@ func (ns *NotificationStage) status_notifications_group_with_twice_limit_size() 
 }
 
 func (ns *NotificationStage) status_notifications_group_greater_than_limit_size() *NotificationStage {
-	conf := ns.conf.Get("status")
+	conf := ns.conf.Limits.Get("status")
 	if conf == nil {
 		ns.assert.Failf("invalid notification type value: %v", "status")
 	}
@@ -159,7 +152,7 @@ func (ns *NotificationStage) a_group_of_notifications_of_type_and_size(typ strin
 // when
 func (ns *NotificationStage) the_service_sends_notifications() *NotificationStage {
 	for _, notif := range ns.notifications {
-		conf := ns.conf.Get(notif.itself.Type)
+		conf := ns.conf.Limits.Get(notif.itself.Type)
 		if conf == nil {
 			ns.assert.Failf("invalid notification type value: %v", "status")
 		}

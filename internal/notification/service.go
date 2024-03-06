@@ -3,8 +3,8 @@ package notification
 import (
 	"context"
 	"fmt"
-	"rate-limit/errs"
 	"rate-limit/internal/configs"
+	"rate-limit/internal/errs"
 	"time"
 )
 
