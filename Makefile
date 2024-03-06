@@ -22,17 +22,22 @@ redis-ready:
 	fi
 
 # Run redis
-redis: redis-up redis-ready
+local-redis: redis-up redis-ready
 
 # Run Go tests
-integration-test: redis
+integration-test: local-redis
 	go test ./integration_tests/...
 
 unit-test: 
-	go test ./...
+	go test ./internal/...
 
-all: unit-test integration-test
+local-all: unit-test integration-test
+
+integration-test-gha: 
+	go test ./integration_tests/...
+
+all-gha: unit-test integration-test-gha
 
 # Stop Redis container
-clean:
+local-clean:
 	docker-compose down

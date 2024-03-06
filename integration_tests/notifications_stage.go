@@ -159,6 +159,8 @@ func (ns *NotificationStage) the_service_sends_notifications() *NotificationStag
 
 		if err := ns.service.Send(context.Background(), notif.itself); err == nil {
 			notif.isSent = true
+		} else {
+			fmt.Printf("error sending notification: %v", err)
 		}
 
 		// sleep time should be lesser than the window size, so all are sent within the time window
