@@ -21,6 +21,12 @@ func newSlidingWindowCounter(redis *redis.Client) *slidingWindowCounter {
 	}
 }
 
+
+// CheckLimit checks if the rate limit for a given key has been exceeded.
+// It removes expired requests from the sliding window and adds the current request to the sorted set.
+// Then, it counts the number of non-expired requests and compares it to the specified limit.
+// If the total number of requests exceeds the limit, it returns an error indicating the rate limit has been exceeded.
+// Otherwise, it returns nil.
 func (swc *slidingWindowCounter) CheckLimit(ctx context.Context, key string, limit int64, tWindow time.Duration) error {
 	now := time.Now()
 

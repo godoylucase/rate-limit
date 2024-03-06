@@ -1,0 +1,80 @@
+## Table of Contents
+| Section                                               | Description                                                                   |
+|-------------------------------------------------------|-------------------------------------------------------------------------------|
+| [Overview](#overview)                                 | A brief overview of the Notification Service.                                 |
+| [Assumptions](#architecture)                          | What assumptions have been taken to build this library.                       |
+| [Getting Started](#getting-started)                   | Instructions to set up and run the Notification Service.                      |
+| [Rate Limiting Algorithms](#rate-limiting-algorithms) | An overview of the rate limiting algorithms used in the Notification Service. |
+
+# Overview
+A simple Notification Service implementation with rate limiting capabilities.
+
+# Assumptions
+- It uses redis as a data store for rate limiting. Meant to be used in a distributed environment.
+- Configuration values for the service should be provided by the client via json file path location.
+- Rate limited notifications are simply rejected, it is up to the client to handle the rejection whether to retry or not.
+
+# Getting Started (TODO)
+
+# Rate Limiting Algorithms
+
+Rate limiting is a crucial mechanism to control the rate of incoming requests to a system,
+preventing abuse or overuse of resources. Two commonly used rate limiting algorithms are the
+`Sliding Window` and `Fixed Window` algorithms. This library provides both implementations.
+
+## Sliding Window
+
+The sliding window algorithm is a rate-limiting technique that considers a moving time window to evaluate request rates.
+It maintains a record of recent activities within a specified time window and allows or denies requests based on the
+accumulated count of activities within that window.
+
+### Operation
+
+At each request, the algorithm checks the count of activities within the sliding window.
+Expired activities are removed, and the current request is added to the count.
+If the count exceeds the defined limit, the request is denied.
+
+### Use Cases
+
+Suitable for scenarios where a smooth and continuous rate limit is required.
+Offers flexibility in defining the time window duration.
+
+##### Pros:
+
+- Smooth Limiting: Provides a smoother rate limit by considering a rolling time window.
+- Flexibility: Allows customization of the time window duration based on specific use cases.
+- Real-Time Sensitivity: Reacts more quickly to changes in traffic patterns due to its continuous evaluation.
+
+#### Cons:
+
+- Higher Memory Usage: May require more memory to store timestamped activities within the sliding window.
+- Complexity: Implementing sliding window algorithms can be more complex due to continuous updates and removals.
+
+## Fixed Window
+
+The fixed window algorithm is a rate-limiting approach that divides time into fixed intervals and evaluates request
+rates within those intervals. It resets the count at the end of each interval, allowing or denying requests based on the
+accumulated count.
+
+### Operation
+
+At each request, the algorithm increments the count for the current interval.
+When the interval ends, the count resets to zero.
+If the count exceeds the defined limit, the request is denied.
+
+### Use Cases
+
+Suitable for scenarios where a strict, periodic rate limit is required.
+Offers simplicity and predictability in rate limiting.
+
+#### Pros
+
+- Predictable Reset: Resets count at fixed intervals, providing a clear and predictable rate limiting pattern.
+- Resource Efficiency: Typically requires less memory compared to sliding window algorithms.
+- Ease of Implementation: Simpler to implement due to discrete and periodic evaluation intervals.
+
+#### Cons
+
+- Burstiness: May allow bursty traffic to exceed the limit at the beginning of each interval.
+- Delayed Reaction: Reacts less quickly to sudden changes in traffic patterns as the evaluation occurs at fixed
+  intervals.

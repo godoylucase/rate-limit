@@ -1,3 +1,4 @@
+// Package notification provides a service for sending notifications with rate limiting.
 package notification
 
 import (
@@ -8,20 +9,24 @@ import (
 	"time"
 )
 
+// Gateway defines the interface for sending notifications.
 type Gateway interface {
 	Send(ctx context.Context, userID string, message string) error
 }
 
+// RateLimiter defines the interface for rate limiting.
 type RateLimiter interface {
 	CheckLimit(ctx context.Context, key string, limit int64, tWindow time.Duration) error
 }
 
+// Service is a notification service that sends notifications with rate limiting.
 type Service struct {
 	gateway  Gateway
 	rlimiter RateLimiter
 	lconfigs configs.LimitConfigMap
 }
 
+// NewService creates a new instance of the Service.
 func NewService(rlimiter RateLimiter, gateway Gateway, lconfigs configs.LimitConfigMap) *Service {
 	return &Service{
 		gateway:  gateway,
@@ -30,6 +35,8 @@ func NewService(rlimiter RateLimiter, gateway Gateway, lconfigs configs.LimitCon
 	}
 }
 
+// Send sends a notification using the specified context and notification data.
+// It performs validation, checks the rate limit, and sends the notification using the gateway.
 func (s *Service) Send(ctx context.Context, notif *Notification) error {
 	if !isValid(notif) {
 		return fmt.Errorf("invalid notification values: %w", errs.ErrInvalidArguments)

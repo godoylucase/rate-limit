@@ -25,6 +25,11 @@ func newFixedWindowCounter(redis *redis.Client) *fixedWindowCounter {
 	}
 }
 
+// CheckLimit checks the rate limit for a given key. It retrieves the current value and TTL of the key from Redis.
+// If the key does not exist or has expired, it sets an expiration time for the key.
+// It then checks if the total requests exceed the specified limit and denies the request if it does.
+// If the total requests do not exceed the limit, it increments the total requests and allows the request.
+// If any error occurs during the process, it returns an error.
 func (fwc *fixedWindowCounter) CheckLimit(ctx context.Context, key string, limit int64, tWindow time.Duration) error {
 	pipe := fwc.redis.TxPipeline()
 
