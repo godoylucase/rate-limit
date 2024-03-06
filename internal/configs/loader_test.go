@@ -17,8 +17,11 @@ func TestLoad(t *testing.T) {
 	defer os.Remove(tmpfile.Name())
 
 	// Define a sample configuration
-	conf := NotificationConfig{
-		Gateway: "sample_gateway",
+	conf := JsonConfiguration{
+		Redis: &RedisConfig{
+			Host: "localhost",
+			Port: 6379,
+		},
 		RateLimit: &RateLimitConfig{
 			Type: "sample_rate_limiter",
 			Limits: []*LimitConfig{
@@ -55,7 +58,7 @@ func TestLoad(t *testing.T) {
 	}
 
 	// Verify the loaded service matches the expected values
-	assert.Equal(t, conf.Gateway, service.GatewayType, "Unexpected GatewayType")
+	assert.Equal(t, conf.Redis.Address(), service.RedisAddr, "Unexpected GatewayType")
 	assert.Equal(t, conf.RateLimit.Type, service.RateLimiterType, "Unexpected RateLimiterType")
 	assert.Len(t, service.Limits, len(conf.RateLimit.Limits), "Unexpected number of Limits")
 	for _, limit := range conf.RateLimit.Limits {

@@ -89,7 +89,7 @@ func (ns *NotificationStage) a_no_op_gateway() *NotificationStage {
 }
 
 func (ns *NotificationStage) a_redis_rate_limiter() *NotificationStage {
-	client := redis.NewClient(&redis.Options{Addr: "localhost:6379", Password: "", DB: 0})
+	client := redis.NewClient(&redis.Options{Addr: ns.conf.RedisAddr, Password: "", DB: 0})
 	ns.rlimiter = rate_limiter.Get(ns.conf.RateLimiterType, client)
 
 	return ns
@@ -139,7 +139,6 @@ func (ns *NotificationStage) the_service_sends_notifications() *NotificationStag
 	for _, notif := range ns.notifications {
 		conf := ns.conf.Limits.Get(notif.itself.Type)
 		ns.assert.NotNil(conf)
-
 
 		if err := ns.service.Send(context.Background(), notif.itself); err == nil {
 			notif.isSent = true

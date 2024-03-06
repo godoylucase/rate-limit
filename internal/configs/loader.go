@@ -3,6 +3,7 @@ package configs
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"time"
 )
@@ -18,10 +19,22 @@ func (lcm LimitConfigMap) Get(typ string) *LimitConfig {
 	return lcm[typ]
 }
 
-// NotificationConfig represents the configuration for the notification service.
-type NotificationConfig struct {
-	Gateway   string           `json:"gateway"`
+// JsonConfiguration represents the configuration for the notification service.
+type JsonConfiguration struct {
+	Redis     *RedisConfig     `json:"redis"`
 	RateLimit *RateLimitConfig `json:"rate_limit"`
+}
+
+type RedisConfig struct {
+	Host string `json:"host"`
+	Port int    `json:"port"`
+}
+
+func (rc *RedisConfig) Address() string {
+	if rc.Port != 0 {
+		return fmt.Sprintf("%v:%v", rc.Host, rc.Port)
+	}
+	return rc.Host
 }
 
 // LimitConfig represents the configuration for a rate limit.
@@ -39,7 +52,7 @@ type RateLimitConfig struct {
 
 // NotificationService represents the notification service with its configurations.
 type NotificationService struct {
-	GatewayType     string
+	RedisAddr       string
 	RateLimiterType string
 	Limits          LimitConfigMap
 }
@@ -52,20 +65,20 @@ func Load(filepath string) (*NotificationService, error) {
 		return nil, err
 	}
 
-	var conf NotificationConfig
-	if err := json.Unmarshal(content, &conf); err != nil {
+	var jsonConf JsonConfiguration
+	if err := json.Unmarshal(content, &jsonConf); err != nil {
 		return nil, err
 	}
 
-	limits := make(map[string]*LimitConfig, len(conf.RateLimit.Limits))
-	for _, config := range conf.RateLimit.Limits {
+	limits := make(map[string]*LimitConfig, len(jsonConf.RateLimit.Limits))
+	for _, config := range jsonConf.RateLimit.Limits {
 		limits[config.Type] = config
 	}
 
 	// Create a new NotificationService with the parsed configurations.
 	service := &NotificationService{
-		GatewayType:     conf.Gateway,
-		RateLimiterType: conf.RateLimit.Type,
+		RedisAddr:       jsonConf.Redis.Address(),
+		RateLimiterType: jsonConf.RateLimit.Type,
 		Limits:          limits,
 	}
 
