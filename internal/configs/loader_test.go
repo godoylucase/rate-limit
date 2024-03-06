@@ -2,7 +2,6 @@ package configs
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -11,7 +10,7 @@ import (
 
 func TestLoad(t *testing.T) {
 	// Create a temporary file for testing
-	tmpfile, err := ioutil.TempFile("", "config.json")
+	tmpfile, err := os.CreateTemp("", "config.json")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -72,7 +71,7 @@ func TestLoadFileNotFound(t *testing.T) {
 
 func TestLoadInvalidJSON(t *testing.T) {
 	// Create a temporary file with invalid JSON content
-	tmpfile, err := ioutil.TempFile("", "invalid_config.json")
+	tmpfile, err := os.CreateTemp("", "invalid_config.json")
 	if err != nil {
 		t.Fatal(err)
 	}

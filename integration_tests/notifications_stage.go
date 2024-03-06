@@ -102,9 +102,7 @@ func (ns *NotificationStage) a_notification_service() *NotificationStage {
 
 func (ns *NotificationStage) status_notifications_group_with_limit_size() *NotificationStage {
 	conf := ns.conf.Limits.Get("status")
-	if conf == nil {
-		ns.assert.Failf("invalid notification type value: %v", "status")
-	}
+	ns.assert.NotNil(conf)
 
 	ns.a_group_of_notifications_of_type_and_size(conf.Type, int(conf.Limit))
 
@@ -113,22 +111,9 @@ func (ns *NotificationStage) status_notifications_group_with_limit_size() *Notif
 
 func (ns *NotificationStage) status_notifications_group_with_twice_limit_size() *NotificationStage {
 	conf := ns.conf.Limits.Get("status")
-	if conf == nil {
-		ns.assert.Failf("invalid notification type value: %v", "status")
-	}
+	ns.assert.NotNil(conf)
 
 	ns.a_group_of_notifications_of_type_and_size(conf.Type, int(conf.Limit)*2)
-
-	return ns
-}
-
-func (ns *NotificationStage) status_notifications_group_greater_than_limit_size() *NotificationStage {
-	conf := ns.conf.Limits.Get("status")
-	if conf == nil {
-		ns.assert.Failf("invalid notification type value: %v", "status")
-	}
-
-	ns.a_group_of_notifications_of_type_and_size(conf.Type, int(conf.Limit))
 
 	return ns
 }
@@ -153,9 +138,8 @@ func (ns *NotificationStage) a_group_of_notifications_of_type_and_size(typ strin
 func (ns *NotificationStage) the_service_sends_notifications() *NotificationStage {
 	for _, notif := range ns.notifications {
 		conf := ns.conf.Limits.Get(notif.itself.Type)
-		if conf == nil {
-			ns.assert.Failf("invalid notification type value: %v", "status")
-		}
+		ns.assert.NotNil(conf)
+
 
 		if err := ns.service.Send(context.Background(), notif.itself); err == nil {
 			notif.isSent = true
