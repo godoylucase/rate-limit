@@ -1,8 +1,6 @@
 package notification
 
 import (
-	"time"
-
 	"github.com/segmentio/ksuid"
 )
 
@@ -26,10 +24,4 @@ func isValid(notif *Notification) bool {
 	}
 
 	return true
-}
-
-type CheckLimitRequest struct {
-	Key     string
-	Limit   int64
-	TWindow time.Duration
 }

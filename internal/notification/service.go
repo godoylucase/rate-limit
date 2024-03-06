@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"rate-limit/errs"
 	"rate-limit/internal/configs"
+	"time"
 )
 
 type Gateway interface {
@@ -12,7 +13,7 @@ type Gateway interface {
 }
 
 type RateLimiter interface {
-	CheckLimit(ctx context.Context, req *CheckLimitRequest) error
+	CheckLimit(ctx context.Context, key string, limit int64, tWindow time.Duration) error
 }
 
 type Service struct {
@@ -37,11 +38,7 @@ func (s *Service) Send(ctx context.Context, notif *Notification) error {
 	conf := s.lconfigs.Get(notif.Type)
 	key := fmt.Sprintf("%v-%v", notif.UserID.String(), notif.Type)
 
-	if err := s.rlimiter.CheckLimit(ctx, &CheckLimitRequest{
-		Key:     key,
-		Limit:   conf.Limit,
-		TWindow: conf.WindowsSizeDuration(),
-	}); err != nil {
+	if err := s.rlimiter.CheckLimit(ctx, key, conf.Limit, conf.WindowsSizeDuration()); err != nil {
 		return fmt.Errorf("error checking rate limit for notification type %v: %w", notif.Type, err)
 	}
 

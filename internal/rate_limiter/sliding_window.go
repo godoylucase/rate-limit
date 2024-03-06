@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"rate-limit/errs"
-	"rate-limit/internal/notification"
 	"strconv"
 	"time"
 
@@ -22,45 +21,51 @@ func NewSlidingWindowCounter(redis *redis.Client) *slidingWindowCounter {
 	}
 }
 
-func (swc *slidingWindowCounter) CheckLimit(ctx context.Context, req *notification.CheckLimitRequest) error {
+func (swc *slidingWindowCounter) CheckLimit(ctx context.Context, key string, limit int64, tWindow time.Duration) error {
 	now := time.Now()
 
-	minimum := now.Add(-req.TWindow)
+	pipe := swc.redis.TxPipeline()
 
-	p := swc.redis.Pipeline()
+	// Calculate the minimum timestamp allowed within the sliding window
+	minimum := now.Add(-tWindow)
 
-	// remove all requests that have already expired on this set
-	removeByScore := p.ZRemRangeByScore(ctx, req.Key, "0", strconv.FormatInt(minimum.UnixMilli(), 10))
+	// Remove all requests that have already expired within the sliding window
+	removeByScore := pipe.ZRemRangeByScore(ctx, key, "0", strconv.FormatInt(minimum.UnixMilli(), 10))
 
-	// add the current request
-	add := p.ZAdd(ctx, req.Key, &redis.Z{
+	// Add the current request to the sorted set
+	add := pipe.ZAdd(ctx, key, &redis.Z{
 		Score:  float64(now.UnixMilli()),
 		Member: ksuid.New(),
 	})
 
-	// count how many non-expired requests we have on the sorted set
-	count := p.ZCount(ctx, req.Key, "-inf", "+inf")
+	// Count how many non-expired requests we have in the sorted set
+	count := pipe.ZCount(ctx, key, "-inf", "+inf")
 
-	if _, err := p.Exec(ctx); err != nil {
-		return fmt.Errorf("failed to execute sorted set pipeline for key: %v with error: %w", req.Key, err)
+	if _, err := pipe.Exec(ctx); err != nil {
+		return fmt.Errorf("failed to execute sorted set pipeline for key: %v with error: %w", key, err)
 	}
 
+	// Check for errors in removing expired items
 	if err := removeByScore.Err(); err != nil {
-		return fmt.Errorf("failed to remove items from key: %v with error: %w", req.Key, err)
+		return fmt.Errorf("failed to remove items from key: %v with error: %w", key, err)
 	}
 
+	// Check for errors in adding the current item
 	if err := add.Err(); err != nil {
-		return fmt.Errorf("failed to add item to key: %v with error: %w", req.Key, err)
+		return fmt.Errorf("failed to add item to key: %v with error: %w", key, err)
 	}
 
+	// Retrieve the total number of non-expired requests
 	totalRequests, err := count.Result()
 	if err != nil {
-		return fmt.Errorf("failed to count items for key: %v with error: %w", req.Key, err)
+		return fmt.Errorf("failed to count items for key: %v with error: %w", key, err)
 	}
 
-	if totalRequests > req.Limit {
+	// Check if the total requests exceed the specified limit
+	if totalRequests > limit {
 		return errs.ErrExceededRateLimit
 	}
 
+	// No rate limit exceeded
 	return nil
 }

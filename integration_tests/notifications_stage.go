@@ -95,6 +95,13 @@ func (ns *NotificationStage) a_redis_sliding_window_rate_limiter() *Notification
 	return ns
 }
 
+func (ns *NotificationStage) a_redis_fixed_window_rate_limiter() *NotificationStage {
+	client := redis.NewClient(&redis.Options{Addr: "localhost:6379", Password: "", DB: 0})
+	ns.rlimiter = rate_limiter.NewFixedWindowCounter(client)
+
+	return ns
+}
+
 func (ns *NotificationStage) a_notification_service() *NotificationStage {
 	ns.service = notification.NewService(ns.rlimiter, ns.gateway, ns.conf)
 	return ns
