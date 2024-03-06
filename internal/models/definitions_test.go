@@ -1,4 +1,4 @@
-package notification
+package models
 
 import (
 	"testing"
@@ -52,7 +52,7 @@ func TestIsValid(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := isValid(tt.notif); got != tt.expected {
+			if got := IsValid(tt.notif); got != tt.expected {
 				t.Errorf("isValid() = %v, want %v", got, tt.expected)
 			}
 		})

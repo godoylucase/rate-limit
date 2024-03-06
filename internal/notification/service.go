@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"rate-limit/internal/configs"
 	"rate-limit/internal/errs"
+	"rate-limit/internal/models"
+
 	"time"
 )
 
@@ -14,9 +16,9 @@ type Gateway interface {
 	Send(ctx context.Context, userID string, message string) error
 }
 
-// RateLimiter defines the interface for rate limiting.
+// RateLimiter is an interface that defines the methods for checking the rate limit.
 type RateLimiter interface {
-	CheckLimit(ctx context.Context, key string, limit int64, tWindow time.Duration) error
+	CheckLimit(ctx context.Context, key string, limit int64, tWindow time.Duration) (*models.RateLimitStatus, error)
 }
 
 // Service is a notification service that sends notifications with rate limiting.
@@ -37,8 +39,8 @@ func NewService(rlimiter RateLimiter, gateway Gateway, lconfigs configs.LimitCon
 
 // Send sends a notification using the specified context and notification data.
 // It performs validation, checks the rate limit, and sends the notification using the gateway.
-func (s *Service) Send(ctx context.Context, notif *Notification) error {
-	if !isValid(notif) {
+func (s *Service) Send(ctx context.Context, notif *models.Notification) error {
+	if !models.IsValid(notif) {
 		return fmt.Errorf("invalid notification values: %w", errs.ErrInvalidArguments)
 	}
 
@@ -49,8 +51,16 @@ func (s *Service) Send(ctx context.Context, notif *Notification) error {
 
 	key := fmt.Sprintf("%v-%v", notif.UserID.String(), notif.Type)
 
-	if err := s.rlimiter.CheckLimit(ctx, key, conf.Limit, conf.WindowsSizeDuration()); err != nil {
+	status, err := s.rlimiter.CheckLimit(ctx, key, conf.Limit, conf.WindowsSizeDuration())
+	if err != nil {
 		return fmt.Errorf("error checking rate limit for notification type %v: %w", notif.Type, err)
+	} else if status.State == models.Denied {
+		return &errs.ErrExceededRateLimit{
+			State:     string(status.State),
+			Count:     status.Count,
+			ExpiresAt: status.ExpiresAt,
+		}
+
 	}
 
 	if err := s.gateway.Send(ctx, notif.UserID.String(), notif.Message); err != nil {

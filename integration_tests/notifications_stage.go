@@ -5,8 +5,11 @@ import (
 	"fmt"
 	"rate-limit/integration_tests/support/gateway"
 	"rate-limit/internal/configs"
+	"rate-limit/internal/errs"
+	"rate-limit/internal/models"
 	"rate-limit/internal/notification"
 	"rate-limit/internal/rate_limiter"
+
 	"sync/atomic"
 	"testing"
 	"time"
@@ -28,7 +31,7 @@ func (g *noOpGW) Send(ctx context.Context, userID string, message string) error 
 }
 
 type notif struct {
-	itself *notification.Notification
+	itself *models.Notification
 	isSent bool
 }
 
@@ -39,7 +42,8 @@ type NotificationStage struct {
 
 	userID ksuid.KSUID
 
-	conf     *configs.NotificationService
+	conf *configs.NotificationService
+
 	gateway  notification.Gateway
 	rlimiter notification.RateLimiter
 	service  *notification.Service
@@ -121,7 +125,7 @@ func (ns *NotificationStage) status_notifications_group_with_twice_limit_size() 
 func (ns *NotificationStage) a_group_of_notifications_of_type_and_size(typ string, size int) *NotificationStage {
 	for i := 0; i < size; i++ {
 		n := &notif{
-			itself: &notification.Notification{
+			itself: &models.Notification{
 				Type:    typ,
 				UserID:  ns.userID,
 				Message: fmt.Sprintf("message from type %v, and value %v", typ, i),
@@ -144,6 +148,11 @@ func (ns *NotificationStage) the_service_sends_notifications() *NotificationStag
 			notif.isSent = true
 		} else {
 			fmt.Printf("error sending notification: %v", err)
+
+			var errLimit *errs.ErrExceededRateLimit
+			ns.require.ErrorAs(err, &errLimit)
+			ns.require.NotNil(errLimit)
+			ns.require.Equal(string(models.Denied), errLimit.State)
 		}
 
 		// sleep time should be lesser than the window size, so all are sent within the time window

@@ -4,14 +4,15 @@ import (
 	"context"
 	"rate-limit/internal/configs"
 	"rate-limit/internal/errs"
+	"rate-limit/internal/models"
 	"testing"
 	"time"
 
 	"github.com/segmentio/ksuid"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-type CheckLimitFn func(ctx context.Context, key string, limit int64, tWindow time.Duration) error
+type CheckLimitFn func(ctx context.Context, key string, limit int64, tWindow time.Duration) (*models.RateLimitStatus, error)
 type SendFn func(ctx context.Context, userID string, message string) error
 
 type RateLimitMock struct {
@@ -22,7 +23,7 @@ type GatewayMock struct {
 	SendFn SendFn
 }
 
-func (r *RateLimitMock) CheckLimit(ctx context.Context, key string, limit int64, tWindow time.Duration) error {
+func (r *RateLimitMock) CheckLimit(ctx context.Context, key string, limit int64, tWindow time.Duration) (*models.RateLimitStatus, error) {
 	return r.CheckLimitFn(ctx, key, limit, tWindow)
 }
 
@@ -42,10 +43,11 @@ func TestService_Send(t *testing.T) {
 	}
 
 	config := configs.LimitConfigMap(conf)
+	now := time.Now()
 
 	tests := []struct {
 		name         string
-		notif        *Notification
+		notif        *models.Notification
 		config       *configs.LimitConfigMap
 		checkLimitFn CheckLimitFn
 		sendFn       SendFn
@@ -53,78 +55,77 @@ func TestService_Send(t *testing.T) {
 	}{
 		{
 			name: "valid notification",
-			notif: &Notification{
+			notif: &models.Notification{
 				Message: "Test message",
 				UserID:  ksuid.New(),
 				Type:    "Test type",
 			},
 			config: &config,
-			checkLimitFn: func(ctx context.Context, key string, limit int64, tWindow time.Duration) error {
-				return nil
+			checkLimitFn: func(ctx context.Context, key string, limit int64, tWindow time.Duration) (*models.RateLimitStatus, error) {
+				return &models.RateLimitStatus{
+					State:     models.Allowed,
+					Count:     1,
+					ExpiresAt: now.Unix(),
+				}, nil
 			},
-			sendFn: func(ctx context.Context, userID string, message string) error {
-				return nil
-			},
+			sendFn:      func(ctx context.Context, userID string, message string) error { return nil },
 			expectedErr: nil,
 		},
 		{
 			name: "invalid notification type",
-			notif: &Notification{
+			notif: &models.Notification{
 				Message: "Test message",
 				UserID:  ksuid.New(),
 				Type:    "Invalid Test type",
 			},
-			config: &config,
-			checkLimitFn: func(ctx context.Context, key string, limit int64, tWindow time.Duration) error {
-				return nil
-			},
-			sendFn: func(ctx context.Context, userID string, message string) error {
-				return nil
-			},
+			config:      &config,
 			expectedErr: errs.ErrInvalidArguments,
 		},
 		{
 			name: "invalid notification",
-			notif: &Notification{
+			notif: &models.Notification{
 				Message: "",
 				UserID:  ksuid.New(),
 				Type:    "Test type",
 			},
-			config: &config,
-			checkLimitFn: func(ctx context.Context, key string, limit int64, tWindow time.Duration) error {
-				return nil
-			},
-			sendFn: func(ctx context.Context, userID string, message string) error {
-				return nil
-			},
+			config:      &config,
 			expectedErr: errs.ErrInvalidArguments,
 		},
 		{
 			name: "rate limit check error",
-			notif: &Notification{
+			notif: &models.Notification{
 				Message: "Test message",
 				UserID:  ksuid.New(),
 				Type:    "Test type",
 			},
 			config: &config,
-			checkLimitFn: func(ctx context.Context, key string, limit int64, tWindow time.Duration) error {
-				return errs.ErrExceededRateLimit
+			checkLimitFn: func(ctx context.Context, key string, limit int64, tWindow time.Duration) (*models.RateLimitStatus, error) {
+				return &models.RateLimitStatus{
+					State:     models.Denied,
+					Count:     1,
+					ExpiresAt: now.Unix(),
+				}, nil
 			},
-			sendFn: func(ctx context.Context, userID string, message string) error {
-				return nil
+			expectedErr: &errs.ErrExceededRateLimit{
+				State:     string(models.Denied),
+				Count:     1,
+				ExpiresAt: now.Unix(),
 			},
-			expectedErr: errs.ErrExceededRateLimit,
 		},
 		{
 			name: "gateway send error",
-			notif: &Notification{
+			notif: &models.Notification{
 				Message: "Test message",
 				UserID:  ksuid.New(),
 				Type:    "Test type",
 			},
 			config: &config,
-			checkLimitFn: func(ctx context.Context, key string, limit int64, tWindow time.Duration) error {
-				return nil
+			checkLimitFn: func(ctx context.Context, key string, limit int64, tWindow time.Duration) (*models.RateLimitStatus, error) {
+				return &models.RateLimitStatus{
+					State:     models.Allowed,
+					Count:     1,
+					ExpiresAt: now.Unix(),
+				}, nil
 			},
 			sendFn: func(ctx context.Context, userID string, message string) error {
 				return errs.ErrInternalError
@@ -137,8 +138,9 @@ func TestService_Send(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			s := NewService(&RateLimitMock{CheckLimitFn: tt.checkLimitFn}, &GatewayMock{SendFn: tt.sendFn}, *tt.config)
 
-			err := s.Send(ctx, tt.notif)
-			assert.ErrorIs(t, err, tt.expectedErr)
+			if err := s.Send(ctx, tt.notif); err != nil {
+				require.ErrorContains(t, err, tt.expectedErr.Error())
+			}
 		})
 	}
 }
