@@ -25,8 +25,13 @@ redis-ready:
 redis: redis-up redis-ready
 
 # Run Go tests
-integration_test: redis
+integration-test: redis
 	go test ./integration_tests/...
+
+unit-test: 
+	go test ./...
+
+all: unit-test integration-test
 
 # Stop Redis container
 clean:

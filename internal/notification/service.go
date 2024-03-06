@@ -36,6 +36,10 @@ func (s *Service) Send(ctx context.Context, notif *Notification) error {
 	}
 
 	conf := s.lconfigs.Get(notif.Type)
+	if conf == nil {
+		return fmt.Errorf("notification type %v not found in config: %w", notif.Type, errs.ErrInvalidArguments)
+	}
+
 	key := fmt.Sprintf("%v-%v", notif.UserID.String(), notif.Type)
 
 	if err := s.rlimiter.CheckLimit(ctx, key, conf.Limit, conf.WindowsSizeDuration()); err != nil {
