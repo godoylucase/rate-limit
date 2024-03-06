@@ -1,5 +1,8 @@
 {
-  "gateway": "no_op",
+  "redis": {
+    "host": "localhost",
+    "port": 6379
+  },
   "rate_limit": {
     "type": "sliding_window",
     "limits": [

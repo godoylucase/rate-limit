@@ -5,6 +5,7 @@ package rate_limiter
 
 import (
 	"context"
+	"rate-limit/internal/models"
 	"time"
 
 	"github.com/go-redis/redis/v8"
@@ -17,7 +18,7 @@ const (
 
 // RateLimiter is an interface that defines the methods for checking the rate limit.
 type RateLimiter interface {
-	CheckLimit(ctx context.Context, key string, limit int64, tWindow time.Duration) error
+	CheckLimit(ctx context.Context, key string, limit int64, tWindow time.Duration) (*models.RateLimitStatus, error)
 }
 
 // Get returns the appropriate rate limiter based on the provided type.

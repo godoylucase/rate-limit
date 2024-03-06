@@ -5,8 +5,11 @@ import (
 	"fmt"
 	"rate-limit/integration_tests/support/gateway"
 	"rate-limit/internal/configs"
+	"rate-limit/internal/errs"
+	"rate-limit/internal/models"
 	"rate-limit/internal/notification"
 	"rate-limit/internal/rate_limiter"
+
 	"sync/atomic"
 	"testing"
 	"time"
@@ -28,7 +31,7 @@ func (g *noOpGW) Send(ctx context.Context, userID string, message string) error 
 }
 
 type notif struct {
-	itself *notification.Notification
+	itself *models.Notification
 	isSent bool
 }
 
@@ -39,7 +42,8 @@ type NotificationStage struct {
 
 	userID ksuid.KSUID
 
-	conf     *configs.NotificationService
+	conf *configs.NotificationService
+
 	gateway  notification.Gateway
 	rlimiter notification.RateLimiter
 	service  *notification.Service
@@ -89,7 +93,7 @@ func (ns *NotificationStage) a_no_op_gateway() *NotificationStage {
 }
 
 func (ns *NotificationStage) a_redis_rate_limiter() *NotificationStage {
-	client := redis.NewClient(&redis.Options{Addr: "localhost:6379", Password: "", DB: 0})
+	client := redis.NewClient(&redis.Options{Addr: ns.conf.RedisAddr, Password: "", DB: 0})
 	ns.rlimiter = rate_limiter.Get(ns.conf.RateLimiterType, client)
 
 	return ns
@@ -102,9 +106,7 @@ func (ns *NotificationStage) a_notification_service() *NotificationStage {
 
 func (ns *NotificationStage) status_notifications_group_with_limit_size() *NotificationStage {
 	conf := ns.conf.Limits.Get("status")
-	if conf == nil {
-		ns.assert.Failf("invalid notification type value: %v", "status")
-	}
+	ns.assert.NotNil(conf)
 
 	ns.a_group_of_notifications_of_type_and_size(conf.Type, int(conf.Limit))
 
@@ -113,22 +115,9 @@ func (ns *NotificationStage) status_notifications_group_with_limit_size() *Notif
 
 func (ns *NotificationStage) status_notifications_group_with_twice_limit_size() *NotificationStage {
 	conf := ns.conf.Limits.Get("status")
-	if conf == nil {
-		ns.assert.Failf("invalid notification type value: %v", "status")
-	}
+	ns.assert.NotNil(conf)
 
 	ns.a_group_of_notifications_of_type_and_size(conf.Type, int(conf.Limit)*2)
-
-	return ns
-}
-
-func (ns *NotificationStage) status_notifications_group_greater_than_limit_size() *NotificationStage {
-	conf := ns.conf.Limits.Get("status")
-	if conf == nil {
-		ns.assert.Failf("invalid notification type value: %v", "status")
-	}
-
-	ns.a_group_of_notifications_of_type_and_size(conf.Type, int(conf.Limit))
 
 	return ns
 }
@@ -136,7 +125,7 @@ func (ns *NotificationStage) status_notifications_group_greater_than_limit_size(
 func (ns *NotificationStage) a_group_of_notifications_of_type_and_size(typ string, size int) *NotificationStage {
 	for i := 0; i < size; i++ {
 		n := &notif{
-			itself: &notification.Notification{
+			itself: &models.Notification{
 				Type:    typ,
 				UserID:  ns.userID,
 				Message: fmt.Sprintf("message from type %v, and value %v", typ, i),
@@ -153,14 +142,17 @@ func (ns *NotificationStage) a_group_of_notifications_of_type_and_size(typ strin
 func (ns *NotificationStage) the_service_sends_notifications() *NotificationStage {
 	for _, notif := range ns.notifications {
 		conf := ns.conf.Limits.Get(notif.itself.Type)
-		if conf == nil {
-			ns.assert.Failf("invalid notification type value: %v", "status")
-		}
+		ns.assert.NotNil(conf)
 
 		if err := ns.service.Send(context.Background(), notif.itself); err == nil {
 			notif.isSent = true
 		} else {
 			fmt.Printf("error sending notification: %v", err)
+
+			var errLimit *errs.ErrExceededRateLimit
+			ns.require.ErrorAs(err, &errLimit)
+			ns.require.NotNil(errLimit)
+			ns.require.Equal(string(models.Denied), errLimit.State)
 		}
 
 		// sleep time should be lesser than the window size, so all are sent within the time window
