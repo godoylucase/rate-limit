@@ -1,0 +1,36 @@
+name: Go Test
+on: [pull_request]
+
+jobs:
+  # Label of the container job
+  redis-job:
+    # Containers must run in Linux based operating systems
+    runs-on: ubuntu-latest
+    # Service containers to run with `container-job`
+    services:
+      # Label used to access the service container
+      redis:
+        # Docker Hub image
+        image: redis
+        # Set health checks to wait until redis has started
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        # Ports to expose from the service container
+        ports:
+          - 6379:6379
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.22.x"
+      - name: Install dependencies
+        run: go get ./...
+      - name: Build
+        run: go build -v ./...
+      - name: Test with Makefile target
+        run: make all-gha
