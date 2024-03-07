@@ -54,3 +54,6 @@ gha-all: unit-test gha-integration-test
 # Run linting using golangci-lint
 lint:
 	golangci-lint run ./...
+
+example: local-redis
+	go run example.go

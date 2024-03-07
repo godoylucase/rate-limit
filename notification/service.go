@@ -59,7 +59,7 @@ func (s *Service) Send(ctx context.Context, notif *models.Notification) error {
 		return &errs.ErrExceededRateLimit{
 			State:     string(status.State),
 			Count:     status.Count,
-			ExpiresAt: status.ExpiresAt,
+			ExpiresAt: status.ExpiresAtMs,
 		}
 
 	}

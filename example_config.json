@@ -1,0 +1,16 @@
+{
+  "redis": {
+    "host": "localhost",
+    "port": 6379
+  },
+  "rate_limit": {
+    "type": "sliding_window",
+    "limits": [
+      {
+        "type": "status",
+        "limit": 50,
+        "window_size_ms": 1000
+      }
+    ]
+  }
+}
