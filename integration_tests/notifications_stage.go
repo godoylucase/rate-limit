@@ -3,12 +3,12 @@ package integration_tests
 import (
 	"context"
 	"fmt"
-	"rate-limit/integration_tests/support/gateway"
-	"rate-limit/internal/configs"
-	"rate-limit/internal/errs"
-	"rate-limit/internal/models"
-	"rate-limit/internal/notification"
-	"rate-limit/internal/rate_limiter"
+	"ratelimit/integration_tests/support/gateway"
+	"ratelimit/internal/configs"
+	"ratelimit/internal/errs"
+	"ratelimit/internal/models"
+	"ratelimit/internal/notification"
+	"ratelimit/internal/rate_limiter"
 
 	"sync/atomic"
 	"testing"

@@ -5,7 +5,7 @@ package rate_limiter
 
 import (
 	"context"
-	"rate-limit/internal/models"
+	"ratelimit/internal/models"
 	"time"
 
 	"github.com/go-redis/redis/v8"

@@ -4,9 +4,9 @@ package notification
 import (
 	"context"
 	"fmt"
-	"rate-limit/internal/configs"
-	"rate-limit/internal/errs"
-	"rate-limit/internal/models"
+	"ratelimit/internal/configs"
+	"ratelimit/internal/errs"
+	"ratelimit/internal/models"
 
 	"time"
 )

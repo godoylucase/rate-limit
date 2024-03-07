@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"rate-limit/internal/models"
+	"ratelimit/internal/models"
 	"time"
 
 	"github.com/go-redis/redis/v8"

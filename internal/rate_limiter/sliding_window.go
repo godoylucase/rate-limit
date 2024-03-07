@@ -3,7 +3,7 @@ package rate_limiter
 import (
 	"context"
 	"fmt"
-	"rate-limit/internal/models"
+	"ratelimit/internal/models"
 	"strconv"
 	"time"
 
