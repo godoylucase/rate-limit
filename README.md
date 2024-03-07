@@ -26,13 +26,13 @@ preventing abuse or overuse of resources. Two commonly used rate limiting algori
 
 The sliding window algorithm is a rate-limiting technique that considers a moving time window to evaluate request rates.
 It maintains a record of recent activities within a specified time window and allows or denies requests based on the
-accumulated count of activities within that window.
+accumulated total of activities within that window.
 
 ### Operation
 
-At each request, the algorithm checks the count of activities within the sliding window.
-Expired activities are removed, and the current request is added to the count.
-If the count exceeds the defined limit, the request is denied.
+At each request, the algorithm checks the total of activities within the sliding window.
+Expired activities are removed, and the current request is added to the total.
+If the total exceeds the defined limit, the request is denied.
 
 ### Use Cases
 
@@ -53,14 +53,14 @@ Offers flexibility in defining the time window duration.
 ## Fixed Window
 
 The fixed window algorithm is a rate-limiting approach that divides time into fixed intervals and evaluates request
-rates within those intervals. It resets the count at the end of each interval, allowing or denying requests based on the
-accumulated count.
+rates within those intervals. It resets the total at the end of each interval, allowing or denying requests based on the
+accumulated total.
 
 ### Operation
 
-At each request, the algorithm increments the count for the current interval.
-When the interval ends, the count resets to zero.
-If the count exceeds the defined limit, the request is denied.
+At each request, the algorithm increments the total for the current interval.
+When the interval ends, the total resets to zero.
+If the total exceeds the defined limit, the request is denied.
 
 ### Use Cases
 
@@ -69,7 +69,7 @@ Offers simplicity and predictability in rate limiting.
 
 #### Pros
 
-- Predictable Reset: Resets count at fixed intervals, providing a clear and predictable rate limiting pattern.
+- Predictable Reset: Resets total at fixed intervals, providing a clear and predictable rate limiting pattern.
 - Resource Efficiency: Typically requires less memory compared to sliding window algorithms.
 - Ease of Implementation: Simpler to implement due to discrete and periodic evaluation intervals.
 

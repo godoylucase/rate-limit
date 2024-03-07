@@ -10,7 +10,7 @@ import (
 
 func TestLoad(t *testing.T) {
 	// Create a temporary file for testing
-	tmpfile, err := os.CreateTemp("", "config.json")
+	tmpfile, err := os.CreateTemp("", "example_config.json")
 	if err != nil {
 		t.Fatal(err)
 	}

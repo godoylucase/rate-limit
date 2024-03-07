@@ -26,72 +26,81 @@ func newFixedWindowCounter(redis *redis.Client) *fixedWindowCounter {
 	}
 }
 
-// CheckLimit checks the rate limit for a given key. It retrieves the current value and TTL of the key from Redis.
-// If the key does not exist or has expired, it sets an expiration time for the key.
-// It then checks if the total requests exceed the specified limit and denies the request if it does.
-// If the total requests do not exceed the limit, it increments the total requests and allows the request.
-// If any error occurs during the process, it returns an error.
+// CheckLimit checks the rate limit for a given key within a fixed window.
+// It increments the counter for the current window, retrieves the current counter value,
+// sets the expiration for the window key, and checks against the limit.
+// If the total count is less than or equal to the limit, it returns a RateLimitStatus with State Allowed.
+// If the total count exceeds the limit, it returns a RateLimitStatus with State Denied.
+// The RateLimitStatus also includes the count, which is the current counter value,
+// and the expiresAtMs, which is the timestamp when the window expires in milliseconds.
+// It returns the RateLimitStatus and any error encountered during the process.
 func (fwc *fixedWindowCounter) CheckLimit(ctx context.Context, key string, limit int64, tWindow time.Duration) (*models.RateLimitStatus, error) {
 	pipe := fwc.redis.TxPipeline()
 
-	// Get the current value and TTL in a single call
-	getResult := pipe.Get(ctx, key)
-	ttlResult := pipe.TTL(ctx, key)
+	// Get the current timestamp
+	now := time.Now()
+	expiresAt := now.Add(tWindow).UnixMilli()
 
-	if _, err := pipe.Exec(ctx); err != nil && !errors.Is(err, redis.Nil) {
-		return nil, fmt.Errorf("failed to execute pipeline with get and ttl to key %v with error: %w", key, err)
-	}
+	// Check the current counter value
+	pipe.Get(ctx, key)
 
-	// Extract TTL value
-	ttlDuration, err := ttlResult.Result()
+	// Execute the pipeline
+	results, err := pipe.Exec(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get TTL for key %v with error: %w", key, err)
-	}
+		if !errors.Is(err, redis.Nil) {
+			return nil, fmt.Errorf("failed to execute pipeline: %v", err)
+		}
 
-	// Set expiration if necessary
-	if ttlDuration == keyWithoutExpire || ttlDuration == keyThatDoesNotExist {
-		if err := fwc.redis.PExpire(ctx, key, tWindow).Err(); err != nil {
-			return nil, fmt.Errorf("failed to set an expiration to key %v with error: %w", key, err)
+		// If the key does not exist, we create it and set the expiration
+		pipe.Set(ctx, key, 1, tWindow)
+		_, err := pipe.Exec(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to execute pipeline: %v", err)
+		}
+
+		if limit >= 1 {
+			return &models.RateLimitStatus{
+				State:       models.Allowed,
+				Count:       1,
+				ExpiresAtMs: expiresAt,
+			}, nil
 		}
 	}
 
-	// Calculate expiration time
-	expiresAt := time.Now().Add(ttlDuration)
+	// Increment the counter for the current window
+	pipe.Incr(ctx, key)
 
-	// Retrieve total requests or initialize if the key does not exist
-	total, err := getResult.Uint64()
-	if err != nil && !errors.Is(err, redis.Nil) {
-		return nil, fmt.Errorf("failed to get total requests for key %v with error: %w", key, err)
-	}
+	// Get the current counter value
+	pipe.Get(ctx, key)
 
-	// Check limit and deny if exceeded
-	if int64(total) >= limit {
-		return &models.RateLimitStatus{
-			State:     models.Denied,
-			Count:     int(total),
-			ExpiresAt: expiresAt.Unix(),
-		}, nil
-	}
+	// Set expiration for the window key
+	//pipe.Expire(ctx, key, tWindow)
 
-	// Increment total requests
-	total, err = fwc.redis.Incr(ctx, key).Uint64()
+	// Execute the pipeline
+	results, err = pipe.Exec(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to increment key %v with error: %w", key, err)
+		return nil, fmt.Errorf("failed to execute pipeline: %v", err)
 	}
 
-	// Check limit again and deny if exceeded after increment
-	if int64(total) > limit {
+	// Retrieve the count from the result
+	countResult := results[1].(*redis.StringCmd)
+	total, err := countResult.Int64()
+	if err != nil {
+		return nil, fmt.Errorf("failed to retrieve counter value: %v", err)
+	}
+
+	// Check against the limit
+	if total <= limit {
 		return &models.RateLimitStatus{
-			State:     models.Denied,
-			Count:     int(total),
-			ExpiresAt: expiresAt.Unix(),
+			State:       models.Allowed,
+			Count:       int(total),
+			ExpiresAtMs: expiresAt,
 		}, nil
 	}
 
-	// Allow request
 	return &models.RateLimitStatus{
-		State:     models.Allowed,
-		Count:     int(total),
-		ExpiresAt: expiresAt.Unix(),
+		State:       models.Denied,
+		Count:       int(total),
+		ExpiresAtMs: expiresAt,
 	}, nil
 }

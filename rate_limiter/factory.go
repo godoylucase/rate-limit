@@ -13,8 +13,8 @@ import (
 )
 
 const (
-	FixedWindowCounter   = "sliding_window"
-	SlidingWindowCounter = "fixed_window"
+	FixedWindowCounter   = "fixed_window"
+	SlidingWindowCounter = "sliding_window"
 )
 
 // RateLimiter is an interface that defines the methods for checking the rate limit.

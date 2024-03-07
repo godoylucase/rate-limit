@@ -39,7 +39,7 @@ const (
 
 // RateLimitStatus represents the status of a rate limit.
 type RateLimitStatus struct {
-	State     State
-	Count     int
-	ExpiresAt int64
+	State       State
+	Count       int
+	ExpiresAtMs int64
 }
