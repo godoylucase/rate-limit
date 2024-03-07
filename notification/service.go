@@ -5,9 +5,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/godoylucase/rate-limit/internal/configs"
-	"github.com/godoylucase/rate-limit/internal/errs"
-	"github.com/godoylucase/rate-limit/internal/models"
+	"github.com/godoylucase/rate-limit/configs"
+	"github.com/godoylucase/rate-limit/errs"
+	"github.com/godoylucase/rate-limit/models"
 
 	"time"
 )

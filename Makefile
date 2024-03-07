@@ -35,7 +35,7 @@ local-integration-test: local-redis
 
 # Run unit tests
 unit-test: 
-	go test ./internal/...
+	go test `go list ./... | grep -v integration_tests`
 
 # Run all local tests
 local-all: unit-test local-integration-test

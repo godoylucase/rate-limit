@@ -5,9 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/godoylucase/rate-limit/internal/configs"
-	"github.com/godoylucase/rate-limit/internal/errs"
-	"github.com/godoylucase/rate-limit/internal/models"
+	"github.com/godoylucase/rate-limit/configs"
+	"github.com/godoylucase/rate-limit/errs"
+	"github.com/godoylucase/rate-limit/models"
 
 	"github.com/segmentio/ksuid"
 	"github.com/stretchr/testify/require"

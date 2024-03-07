@@ -5,11 +5,11 @@ import (
 	"fmt"
 
 	"github.com/godoylucase/rate-limit/integration_tests/support/gateway"
-	"github.com/godoylucase/rate-limit/internal/configs"
-	"github.com/godoylucase/rate-limit/internal/errs"
-	"github.com/godoylucase/rate-limit/internal/models"
-	"github.com/godoylucase/rate-limit/internal/notification"
-	"github.com/godoylucase/rate-limit/internal/rate_limiter"
+	"github.com/godoylucase/rate-limit/configs"
+	"github.com/godoylucase/rate-limit/errs"
+	"github.com/godoylucase/rate-limit/models"
+	"github.com/godoylucase/rate-limit/notification"
+	"github.com/godoylucase/rate-limit/rate_limiter"
 
 	"sync/atomic"
 	"testing"

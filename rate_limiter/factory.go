@@ -7,7 +7,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/godoylucase/rate-limit/internal/models"
+	"github.com/godoylucase/rate-limit/models"
 
 	"github.com/go-redis/redis/v8"
 )
