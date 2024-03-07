@@ -1,4 +1,5 @@
 ## Table of Contents
+
 | Section                                               | Description                                                                   |
 |-------------------------------------------------------|-------------------------------------------------------------------------------|
 | [Overview](#overview)                                 | A brief overview of the Notification Service.                                 |
@@ -7,14 +8,48 @@
 | [Rate Limiting Algorithms](#rate-limiting-algorithms) | An overview of the rate limiting algorithms used in the Notification Service. |
 
 # Overview
+
 A simple Notification Service implementation with rate limiting capabilities.
 
 # Assumptions
+
 - It uses redis as a data store for rate limiting. Meant to be used in a distributed environment.
 - Configuration values for the service should be provided by the client via json file path location.
-- Rate limited notifications are simply rejected, it is up to the client to handle the rejection whether to retry or not.
+- Rate limited notifications are simply rejected, it is up to the client to handle the rejection whether to retry or
+  not.
 
-# Getting Started (TODO)
+# Getting Started
+
+Adding this library to your go module is as simple as running the following command:
+
+```shell
+go get github.com/godoylucase/rate-limit
+```
+
+There is a good example of how to use this library in
+the [`example.go`](https://github.com/godoylucase/rate-limit/blob/develop/example.go) file at the root of the project.
+In order to switch
+between the sliding window (`sliding_window`) and fixed window algorithms (`fixed_window`), you can change
+the `rate_limit.type` property in
+the [`example_config.json`](https://github.com/godoylucase/rate-limit/blob/develop/example_config.json) file.
+
+## Running the example (*)
+
+This repository is equipped with a Makefile that has a target to run the example. To run the example, simply run the
+following command:
+
+```shell
+make example
+```
+
+## Running tests (*)
+
+To run the unit and integration tests simply run the following command:
+
+```shell
+make local-all
+```
+(*) Make sure you have installed `make`, `docker` and `docker-compose` in your machine for these to run.
 
 # Rate Limiting Algorithms
 
