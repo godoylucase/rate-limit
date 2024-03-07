@@ -3,12 +3,13 @@ package integration_tests
 import (
 	"context"
 	"fmt"
-	"rate-limit/integration_tests/support/gateway"
-	"rate-limit/internal/configs"
-	"rate-limit/internal/errs"
-	"rate-limit/internal/models"
-	"rate-limit/internal/notification"
-	"rate-limit/internal/rate_limiter"
+
+	"github.com/godoylucase/rate-limit/integration_tests/support/gateway"
+	"github.com/godoylucase/rate-limit/internal/configs"
+	"github.com/godoylucase/rate-limit/internal/errs"
+	"github.com/godoylucase/rate-limit/internal/models"
+	"github.com/godoylucase/rate-limit/internal/notification"
+	"github.com/godoylucase/rate-limit/internal/rate_limiter"
 
 	"sync/atomic"
 	"testing"

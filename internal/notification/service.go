@@ -4,9 +4,10 @@ package notification
 import (
 	"context"
 	"fmt"
-	"rate-limit/internal/configs"
-	"rate-limit/internal/errs"
-	"rate-limit/internal/models"
+
+	"github.com/godoylucase/rate-limit/internal/configs"
+	"github.com/godoylucase/rate-limit/internal/errs"
+	"github.com/godoylucase/rate-limit/internal/models"
 
 	"time"
 )

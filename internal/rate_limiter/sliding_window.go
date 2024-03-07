@@ -3,9 +3,10 @@ package rate_limiter
 import (
 	"context"
 	"fmt"
-	"rate-limit/internal/models"
 	"strconv"
 	"time"
+
+	"github.com/godoylucase/rate-limit/internal/models"
 
 	"github.com/go-redis/redis/v8"
 	"github.com/segmentio/ksuid"

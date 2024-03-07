@@ -4,8 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"rate-limit/internal/models"
 	"time"
+
+	"github.com/godoylucase/rate-limit/internal/models"
 
 	"github.com/go-redis/redis/v8"
 )
