@@ -17,6 +17,8 @@ A simple Notification Service implementation with rate limiting capabilities.
 - Configuration values for the service should be provided by the client via json file path location.
 - Rate limited notifications are simply rejected, it is up to the client to handle the rejection whether to retry or
   not.
+- Client must provide a `Gateway` interface implementation to send notifications. This is to allow the client to use
+  their own notification service provider.
 
 # Getting Started
 

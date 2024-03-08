@@ -12,6 +12,6 @@ type LogGW struct{}
 // Send sends a notification request to the specified user ID with the given message.
 // It logs the notification request and returns nil.
 func (gateway *LogGW) Send(ctx context.Context, userID string, message string) error {
-	log.Printf("notification request sent to userID [%v] at time: %v \n", userID, time.Now().UnixMilli())
+	log.Printf("notification request sent to userID [%v] at time: %v with message: %v\n", userID, time.Now().UnixMilli(), message)
 	return nil
 }
