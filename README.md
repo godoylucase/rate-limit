@@ -1,3 +1,7 @@
+# Notification Service
+
+![gophers.jpg](.resources%2Fgophers.jpg)
+
 ## Table of Contents
 
 | Section                                               | Description                                                                   |
@@ -51,6 +55,7 @@ To run the unit and integration tests simply run the following command:
 ```shell
 make local-all
 ```
+
 (*) Make sure you have installed `make`, `docker` and `docker-compose` in your machine for these to run.
 
 # Rate Limiting Algorithms
