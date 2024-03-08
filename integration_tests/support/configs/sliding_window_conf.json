@@ -13,8 +13,8 @@
       },
       {
         "type": "news",
-        "limit": 250,
-        "window_size_ms": 500
+        "limit": 5,
+        "window_size_ms": 100
       },
       {
         "type": "marketing",

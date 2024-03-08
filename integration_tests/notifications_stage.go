@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/godoylucase/rate-limit/integration_tests/support/gateway"
 	"github.com/godoylucase/rate-limit/configs"
 	"github.com/godoylucase/rate-limit/errs"
+	"github.com/godoylucase/rate-limit/integration_tests/support/gateway"
 	"github.com/godoylucase/rate-limit/models"
 	"github.com/godoylucase/rate-limit/notification"
 	"github.com/godoylucase/rate-limit/rate_limiter"
@@ -123,13 +123,22 @@ func (ns *NotificationStage) status_notifications_group_with_twice_limit_size() 
 	return ns
 }
 
+func (ns *NotificationStage) news_notifications_group_with_twice_limit_size() *NotificationStage {
+	conf := ns.conf.Limits.Get("news")
+	ns.assert.NotNil(conf)
+
+	ns.a_group_of_notifications_of_type_and_size(conf.Type, int(conf.Limit)*2)
+
+	return ns
+}
+
 func (ns *NotificationStage) a_group_of_notifications_of_type_and_size(typ string, size int) *NotificationStage {
 	for i := 0; i < size; i++ {
 		n := &notif{
 			itself: &models.Notification{
 				Type:    typ,
 				UserID:  ns.userID,
-				Message: fmt.Sprintf("message from type %v, and value %v", typ, i),
+				Message: fmt.Sprintf("message from type %v, and value %v", typ, i+1),
 			},
 			isSent: false,
 		}
@@ -140,7 +149,7 @@ func (ns *NotificationStage) a_group_of_notifications_of_type_and_size(typ strin
 }
 
 // when
-func (ns *NotificationStage) the_service_sends_notifications() *NotificationStage {
+func (ns *NotificationStage) the_service_sends_notifications_within_the_time_window() *NotificationStage {
 	for _, notif := range ns.notifications {
 		conf := ns.conf.Limits.Get(notif.itself.Type)
 		ns.assert.NotNil(conf)
@@ -148,7 +157,7 @@ func (ns *NotificationStage) the_service_sends_notifications() *NotificationStag
 		if err := ns.service.Send(context.Background(), notif.itself); err == nil {
 			notif.isSent = true
 		} else {
-			fmt.Printf("error sending notification: %v", err)
+			fmt.Printf("error sending notification: %v \n", err)
 
 			var errLimit *errs.ErrExceededRateLimit
 			ns.require.ErrorAs(err, &errLimit)
@@ -158,6 +167,30 @@ func (ns *NotificationStage) the_service_sends_notifications() *NotificationStag
 
 		// sleep time should be lesser than the window size, so all are sent within the time window
 		sleepTime := time.Duration(conf.WSizeMs/int64(len(ns.notifications)+1)) * time.Millisecond
+		time.Sleep(sleepTime)
+	}
+
+	return ns
+}
+
+func (ns *NotificationStage) the_service_sends_notifications_exceeding_the_time_window() *NotificationStage {
+	for _, notif := range ns.notifications {
+		conf := ns.conf.Limits.Get(notif.itself.Type)
+		ns.assert.NotNil(conf)
+
+		if err := ns.service.Send(context.Background(), notif.itself); err == nil {
+			notif.isSent = true
+		} else {
+			fmt.Printf("error sending notification: %v \n", err)
+
+			var errLimit *errs.ErrExceededRateLimit
+			ns.require.ErrorAs(err, &errLimit)
+			ns.require.NotNil(errLimit)
+			ns.require.Equal(string(models.Denied), errLimit.State)
+		}
+
+		// news time window is 100ms and limit of 5, so it's going to be exceeded after ~5 notifications
+		sleepTime := time.Duration(15) * time.Millisecond
 		time.Sleep(sleepTime)
 	}
 
@@ -175,7 +208,24 @@ func (ns *NotificationStage) all_the_notifications_have_been_sent() *Notificatio
 	return ns
 }
 
-func (ns *NotificationStage) half_of_the_notifications_have_been_sent() *NotificationStage {
+func (ns *NotificationStage) some_notifications_have_been_sent() *NotificationStage {
+	notSentIdxs := make([]int, 0)
+	for i, n := range ns.notifications {
+		if !n.isSent {
+			notSentIdxs = append(notSentIdxs, i)
+		}
+	}
+
+	ns.require.NotEmpty(notSentIdxs)
+	for _, idx := range notSentIdxs {
+		ns.require.Greater(idx, 0)
+		ns.require.Less(idx, len(ns.notifications))
+	}
+
+	return ns
+}
+
+func (ns *NotificationStage) first_half_of_the_notifications_have_been_sent() *NotificationStage {
 	ns.require.Equal(len(ns.notifications)/2, int(ns.sentCount.Load()))
 
 	return ns
